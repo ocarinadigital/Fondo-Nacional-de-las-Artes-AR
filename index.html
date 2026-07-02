@@ -1,19 +1,13 @@
 <!DOCTYPE html>
 <!--
   displays/mano-marmol/index.html — Tipo 2 (Display AR), Ocarina Digital
-  Cliente: Fondo Nacional de las Artes — Pieza: Mano en mármol Emperador
-  Arquitectura de Archivo Único: #screen-display (D) + #screen-detalle (DT)
-  en un solo archivo, transición por JS puro, sin cambio de URL entre pantallas.
-
-  #screen-display parte verbatim de display-base.html (estructura, capas del
-  visor, sistema de popups, motor 3D, hotspots, anillo, sombra, bloqueo de
-  zoom, manejo de errores). El BT solo pisa: paleta, MODEL_URL,
-  MATERIAL_CONFIG, HOTSPOTS_3D y los textos de título/badge/CTA.
-
-  Excepción de paleta pedida por este BT: fondo sólido también en el DT
-  (--dt-bg sin --dt-bg-2 / sin gradiente) para evitar la costura de color en
-  las safe areas de Safari — incluso si Pantalla_Detalle_Instrucciones.pdf
-  todavía documentara el gradiente de 3 stops en alguna revisión anterior.
+  Cliente: Fondo Nacional de las Artes
+  Pieza: Mano en mármol Emperador
+  Archivo único: combina #screen-display (D) + #screen-detalle (DT),
+  navegación por JS puro sin cambio de URL (ver Arquitectura_De_Archivo_Unico.pdf).
+  #screen-display parte verbatim de display-base.html (estructura, popups,
+  motor 3D, hotspots, anillo, sombra, bloqueo de zoom, manejo de errores) — el
+  BT solo pisa paleta, MODEL_URL, MATERIAL_CONFIG, HOTSPOTS_3D y textos.
 -->
 <html lang="es">
 <head>
@@ -21,44 +15,44 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>Mano en mármol Emperador — Fondo Nacional de las Artes</title>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;0,700;1,500&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+  }
+}
+</script>
 <style>
-  /* ============================================================
-     LEY 1 / LEY 3 — raíz fija al viewport real, fondo sólido explícito
-     ============================================================ */
-  *{ box-sizing:border-box; margin:0; padding:0; }
-  *{ touch-action:manipulation; }
-  html, body{ height:100%; overflow:hidden; touch-action:manipulation; }
-  /* Body: color literal hardcodeado (Arquitectura_de_Archivo_Unico.pdf —
-     "Alcance de las variables de paleta"): body no tiene acceso a var(--bg)
-     porque las variables viven dentro de #screen-display/#screen-detalle,
-     que son DESCENDIENTES de body, no ancestros. Este valor se actualiza a
-     mano junto con el resto de la paleta cada vez que cambia el BT. */
-  body{ background-color:#F2EAE0; color:#2B241E; font-family:'Inter',sans-serif; -webkit-font-smoothing:antialiased; }
+  *{ box-sizing:border-box; margin:0; padding:0; touch-action:manipulation; }
+  html, body{ height:100%; overflow:hidden; }
+  /* LEY 3 (Leyes_De_Layout.pdf): <body> lleva color sólido literal, igual al
+     --bg/--dt-bg de esta pieza (#F2EAE0) — nunca var(), porque body no
+     cascadea desde #screen-display/#screen-detalle (ver Arquitectura_De_
+     Archivo_Unico.pdf, "Alcance de las variables de paleta"). */
+  body{ background-color:#F2EAE0; font-family:'Inter',sans-serif; -webkit-font-smoothing:antialiased; }
 
+  /* LEY 1: contenedor raíz fijo al viewport real — nunca vh/dvh acá. */
   .app-root{ position:fixed; inset:0; overflow:hidden; background-color:#F2EAE0; }
 
+  /* Ambas pantallas: LEY 2 — height:100% (heredado del fixed), nunca vh/dvh. */
   .app-screen{ position:absolute; inset:0; overflow:hidden; transition:transform 0.32s cubic-bezier(0.4,0,0.2,1); }
   #screen-display{ transform:translateX(0%); }
   #screen-detalle{ transform:translateX(100%); }
   #screen-display.slide-out{ transform:translateX(-30%); }
   #screen-detalle.slide-in{ transform:translateX(0%); }
 
-  /* ============================================================
-     #screen-display — EL D
-     Paleta de 5 variables, fondo sólido (excepción vigente de
-     display-base.html: se retiró --bg-2 / el gradiente de 3 stops).
-     ============================================================ */
+  /* ===================== #screen-display — PALETA (5 variables, BT) =====================
+     Excepción puntual de este BT: fondo sólido, sin --bg-2 (ver notas del BT). */
   #screen-display{
     --bg:#F2EAE0;
-    --bg-transparent:transparent;
     --ink:#2B241E;
     --gold:#9C8552;
     --gold-soft:#CBB98F;
     --card:#FDFBF7;
-    background-color:var(--bg);
+    background:var(--bg); color:var(--ink); font-family:'Inter',sans-serif; -webkit-font-smoothing:antialiased;
   }
-
-  #screen-display .screen{ max-width:480px; margin:0 auto; height:100%; display:flex; flex-direction:column; position:relative; overflow:hidden; color:var(--ink); }
+  #screen-display .screen-inner{ max-width:480px; margin:0 auto; height:100%; display:flex; flex-direction:column; position:relative; overflow:hidden; }
 
   #screen-display header{ display:flex; align-items:flex-start; justify-content:space-between; padding:1.5vh 6vw 0 6vw; flex-shrink:0; }
   #screen-display .logo{ display:flex; align-items:center; }
@@ -70,9 +64,8 @@
   #screen-display .badge{
     display:inline-flex; align-items:center; gap:1.2vw;
     border:1px solid var(--gold-soft); background:transparent; color:var(--gold);
-    font-size:2.5vw; font-family:'Inter',sans-serif; font-weight:600;
-    letter-spacing:0.14em; text-transform:uppercase;
-    padding:0.5vh 3.5vw; border-radius:100px; margin-bottom:0.8vh; cursor:pointer;
+    font-size:2.5vw; font-family:'Inter', sans-serif; font-weight:600; letter-spacing:0.14em;
+    text-transform:uppercase; padding:0.5vh 3.5vw; border-radius:100px; margin-bottom:0.8vh; cursor:pointer;
   }
   #screen-display .badge-info-icon{
     width:3.2vw; height:3.2vw; min-width:13px; min-height:13px; border-radius:50%;
@@ -97,14 +90,13 @@
   #screen-display .viewer-wrap{ position:relative; margin:1vh 0 0 0; height:50vh; flex-shrink:0; overflow:hidden; }
   #screen-display #viewer3d{ width:100%; height:85%; position:absolute; top:0; left:0; z-index:2; }
   #screen-display #viewer3d canvas{ touch-action:none; cursor:grab; display:block; }
-
   #screen-display .loading-msg{ position:absolute; inset:0; display:flex; align-items:center; justify-content:center; font-size:3vw; color:#999; text-align:center; padding:0 10vw; }
   #screen-display .error-msg{ position:absolute; inset:0; display:flex; align-items:center; justify-content:center; font-size:3vw; color:#b33; text-align:center; padding:0 10vw; }
 
   #screen-display .hotspot-anchor{ position:absolute; width:1.6vw; height:1.6vw; max-width:8px; max-height:8px; border-radius:50%; background:var(--gold-soft); pointer-events:none; transform:translate(-50%,-50%); }
   #screen-display .hotspot-number{ position:absolute; width:6.5vw; height:6.5vw; max-width:28px; max-height:28px; border-radius:50%; background:#1C2333; border:1.4px solid var(--gold); color:#E8C77A; display:flex; align-items:center; justify-content:center; font-size:3.2vw; font-weight:700; cursor:pointer; transform:translate(-50%,-50%); box-shadow:0 2px 6px rgba(0,0,0,0.25); }
-  #screen-display .hotspot-number::after{ content:''; position:absolute; inset:0; border-radius:50%; border:1.4px solid var(--gold-soft); animation:hotspotBreathe 2.4s ease-in-out infinite; }
-  @keyframes hotspotBreathe{ 0%,100%{ transform:scale(1); opacity:0.7; } 50%{ transform:scale(1.55); opacity:0; } }
+  #screen-display .hotspot-number::after{ content:''; position:absolute; inset:0; border-radius:50%; border:1.4px solid var(--gold-soft); animation: hotspotBreathe 2.4s ease-in-out infinite; }
+  @keyframes hotspotBreathe{ 0%, 100% { transform: scale(1); opacity: 0.7; } 50% { transform: scale(1.55); opacity: 0; } }
   #screen-display #hotspots3d{ position:absolute; inset:0; pointer-events:none; z-index:5; }
   #screen-display #hotspots3d .hotspot-number{ pointer-events:auto; }
 
@@ -112,405 +104,330 @@
   #screen-display .rotate-arc-ring{ position:absolute; bottom:8%; left:50%; transform:translateX(-50%); width:96%; max-width:420px; height:auto; color:var(--gold); z-index:3; pointer-events:none; }
   #screen-display .rotate-hint-text{ position:absolute; bottom:6%; left:50%; transform:translateX(-50%); display:flex; align-items:center; gap:1.8vw; color:var(--gold); font-size:2.6vw; white-space:nowrap; z-index:4; }
   #screen-display .hand-icon-wrap{
-    width:7vw; max-width:30px; height:7vw; max-height:30px; flex-shrink:0;
-    background-color:var(--gold); opacity:0.85;
+    width:7vw; max-width:30px; height:7vw; max-height:30px; flex-shrink:0; background-color:var(--gold); opacity:0.85;
     -webkit-mask-image:url('https://raw.githubusercontent.com/ocarinadigital/ocarina-test-assets/main/Icono_Rotar.png');
     mask-image:url('https://raw.githubusercontent.com/ocarinadigital/ocarina-test-assets/main/Icono_Rotar.png');
-    -webkit-mask-size:contain; mask-size:contain;
-    -webkit-mask-repeat:no-repeat; mask-repeat:no-repeat;
-    -webkit-mask-position:center; mask-position:center;
+    -webkit-mask-size:contain; mask-size:contain; -webkit-mask-repeat:no-repeat; mask-repeat:no-repeat; -webkit-mask-position:center; mask-position:center;
   }
 
   #screen-display .cta-detail{ margin:0 6vw 1.2vh 6vw; background:var(--card); border:1px solid var(--gold-soft); border-radius:14px; padding:1.2vh 5vw; display:flex; align-items:center; gap:4vw; text-align:left; width:calc(100% - 12vw); flex-shrink:0; font-family:'Inter',sans-serif; cursor:pointer; }
   #screen-display .cta-icon{ width:9vw; height:9vw; max-width:40px; max-height:40px; border-radius:50%; border:1.4px solid var(--gold-soft); color:var(--gold); display:flex; align-items:center; justify-content:center; flex-shrink:0; font-size:4.5vw; }
   #screen-display .cta-title{ font-size:3.3vw; font-weight:700; letter-spacing:0.06em; text-transform:uppercase; color:var(--gold); margin-bottom:0.4vh; }
-  #screen-display .cta-sub{ font-size:3.3vw; }
+  #screen-display .cta-sub{ font-size:3.3vw; color:#000; }
   #screen-display .cta-arrow{ color:var(--gold-soft); font-size:4.5vw; flex-shrink:0; }
 
-  /* ============================================================
-     #screen-detalle — EL DT
-     Excepción de este BT: misma paleta que el D, fondo sólido (sin --dt-bg-2).
-     Densidad tipográfica: Estándar.
-     ============================================================ */
+  /* ===================== #screen-detalle — PALETA dt- (5 variables, BT) =====================
+     Misma paleta que el D, mapeada. Excepción puntual: fondo sólido, sin --dt-bg-2. */
   #screen-detalle{
     --dt-bg:#F2EAE0;
     --dt-ink:#2B241E;
     --dt-gold:#9C8552;
     --dt-gold-soft:#CBB98F;
     --dt-card:#FDFBF7;
-    background-color:var(--dt-bg);
+    background:var(--dt-bg); color:var(--dt-ink);
   }
+  #screen-detalle .dt-shell{ max-width:480px; margin:0 auto; height:100%; display:flex; flex-direction:column; position:relative; overflow:hidden; }
 
-  #screen-detalle .dt-screen{ max-width:480px; margin:0 auto; height:100%; display:flex; flex-direction:column; position:relative; overflow:hidden; color:var(--dt-ink); font-family:'Inter',sans-serif; }
-
-  /* dt-header — sin divisor con el title-block */
   #screen-detalle .dt-header{ display:flex; align-items:center; justify-content:space-between; padding:1.5vh 6vw 0 6vw; flex-shrink:0; }
-  #screen-detalle .dt-back-link{ display:flex; flex-direction:row; align-items:center; gap:1.2vw; color:var(--dt-gold); font-size:2.5vw; line-height:1.2; cursor:pointer; white-space:nowrap; }
-  #screen-detalle .dt-back-link .arrow{ font-size:4.5vw; margin:0; line-height:1; }
-  #screen-detalle .dt-logo-mark{ height:8vw; max-height:36px; width:auto; display:block; }
+  #screen-detalle .dt-back-link{ display:flex; flex-direction:row; align-items:center; gap:1.2vw; color:var(--dt-gold); font-size:2.5vw; cursor:pointer; white-space:nowrap; }
+  #screen-detalle .dt-arrow{ font-size:4.5vw; line-height:1; }
+  #screen-detalle .dt-logo-mark{ height:9vw; max-height:42px; width:auto; display:block; }
 
-  /* dt-title-block — centrado, padding-top moderado */
-  #screen-detalle .dt-title-block{ padding:1vh 7vw 0 7vw; text-align:center; flex-shrink:0; }
-  #screen-detalle .dt-title-block h1{ font-family:'Cormorant Garamond',serif; font-weight:600; font-size:6.4vw; line-height:1.05; margin-bottom:0.6vh; }
+  #screen-detalle .dt-title-block{ padding:0.8vh 7vw 1.4vh 7vw; text-align:center; flex-shrink:0; }
+  #screen-detalle .dt-h1{ font-family:'Cormorant Garamond',serif; font-weight:600; font-size:6.4vw; line-height:1.05; margin-bottom:0.6vh; color:var(--dt-ink); }
   #screen-detalle .dt-rule{ width:36px; height:1px; background:var(--dt-gold-soft); margin:0 auto 0.6vh auto; }
   #screen-detalle .dt-subtitle{ font-size:2.5vw; letter-spacing:0.1em; text-transform:uppercase; color:var(--dt-gold); font-weight:600; }
 
-  /* dt-tabs-nav — texto pegado al borde inferior, separación real debajo del divisor */
-  #screen-detalle .dt-tabs-nav{ display:flex; justify-content:space-around; margin:1.6vh 6vw 0 6vw; border-bottom:1px solid var(--dt-gold-soft); flex-shrink:0; }
+  #screen-detalle .dt-tabs-nav{ display:flex; justify-content:space-around; border-bottom:1px solid var(--dt-gold-soft); padding:0 4vw; flex-shrink:0; margin-bottom:2vh; }
   #screen-detalle .dt-tab-btn{
-    background:none; border:none; cursor:pointer; font-family:'Inter',sans-serif;
-    font-size:3vw; font-weight:600; letter-spacing:0.05em; text-transform:uppercase;
-    color:var(--dt-ink); opacity:0.5;
-    padding:0 1vw 1.2vh 1vw; border-bottom:2px solid transparent; margin-bottom:-1px;
+    background:none; border:none; border-bottom:2px solid transparent; padding:0 2vw 1.1vh 2vw;
+    font-family:'Inter',sans-serif; font-weight:600; letter-spacing:0.05em; text-transform:uppercase;
+    font-size:3vw; color:var(--dt-ink); opacity:0.5; cursor:pointer;
   }
-  #screen-detalle .dt-tab-btn.active{ color:var(--dt-gold); opacity:1; border-bottom-color:var(--dt-gold); }
+  #screen-detalle .dt-tab-btn.active{ opacity:1; color:var(--dt-gold); border-bottom-color:var(--dt-gold); }
 
-  /* dt-content-area / dt-tab-panel — flex column, space-between + gap mínimo explícito */
-  #screen-detalle .dt-content-area{ flex:1; overflow:hidden; padding:2vh 6vw 2vh 6vw; position:relative; }
-  #screen-detalle .dt-tab-panel{ position:absolute; inset:0; padding:2vh 6vw 2vh 6vw; display:flex; flex-direction:column; justify-content:space-between; gap:2vh; overflow:hidden; text-align:left; }
+  #screen-detalle .dt-content-area{ flex:1; min-height:0; overflow:hidden; position:relative; }
+  #screen-detalle .dt-tab-panel{ display:none; flex-direction:column; justify-content:space-between; gap:2vh; height:100%; padding:0 6vw 2.2vh 6vw; overflow:hidden; text-align:left; }
+  #screen-detalle .dt-tab-panel.active{ display:flex; }
 
-  /* Grupo rígido imagen hero + epígrafe — único contenedor DOM, gap fijo en vh,
-     jamás space-between/flex:1 hacia adentro. */
-  #screen-detalle .dt-hero-group{ display:flex; flex-direction:column; gap:1.2vh; flex-shrink:0; }
+  /* Grupo visual: hero + epígrafe, contenedor único (ver Pantalla_Detalle_Instrucciones.pdf) */
+  #screen-detalle .dt-hero-group{ display:flex; flex-direction:column; gap:1.2vh; }
+  #screen-detalle .dt-hero-img{ width:100%; height:calc(20vh * var(--dt-image-scale, 1)); object-fit:cover; border-radius:14px; display:block; background:var(--dt-card); }
+  #screen-detalle .dt-hero-only .dt-hero-img{ height:calc(26vh * var(--dt-image-scale, 1)); }
 
-  #screen-detalle .dt-shape-rect{ border-radius:14px; }
-  #screen-detalle .dt-shape-circle{ border-radius:50%; aspect-ratio:1/1; }
-  #screen-detalle .dt-shape-square{ border-radius:8px; aspect-ratio:1/1; }
+  #screen-detalle .dt-epigraph{ display:flex; align-items:center; background:var(--dt-card); border-radius:10px; padding:1.3vh 3vw; }
+  #screen-detalle .dt-epigraph-item{ display:flex; align-items:center; gap:1.5vw; }
+  #screen-detalle .dt-epigraph-item svg{ width:4.4vw; height:4.4vw; min-width:15px; min-height:15px; flex-shrink:0; color:var(--dt-gold); }
+  #screen-detalle .dt-epigraph-item span{ font-size:calc(2.4vw * var(--dt-font-scale, 1)); line-height:1.25; color:var(--dt-ink); }
+  #screen-detalle .dt-epigraph-divider{ width:1px; align-self:stretch; background:var(--dt-gold-soft); margin:0 3vw; }
 
-  #screen-detalle .dt-hero-img,
-  #screen-detalle .dt-hero-placeholder{ width:100%; height:calc(20vh * var(--dt-image-scale,1)); object-fit:cover; display:block; }
-  #screen-detalle .dt-hero-placeholder{ background:#E4E1DA; color:#9B968C; display:flex; align-items:center; justify-content:center; font-size:2.4vw; text-align:center; padding:2vw; }
-
-  #screen-detalle .dt-epigraph{ display:flex; align-items:stretch; background:var(--dt-card); border-radius:10px; padding:1.4vh 3vw; }
-  #screen-detalle .dt-epigraph-item{ display:flex; align-items:center; gap:1.8vw; min-width:0; }
-  #screen-detalle .dt-epigraph-item span:last-child{ font-size:calc(2.4vw * var(--dt-font-scale,1)); line-height:1.25; }
-  #screen-detalle .dt-epigraph-icon{ width:5vw; height:5vw; max-width:20px; max-height:20px; flex-shrink:0; color:var(--dt-gold); }
-  #screen-detalle .dt-epigraph-icon svg{ width:100%; height:100%; display:block; }
-  #screen-detalle .dt-epigraph-sep{ width:1px; background:var(--dt-gold-soft); margin:0 3vw; flex-shrink:0; }
-
-  #screen-detalle .dt-text-block{ flex-shrink:0; }
-  #screen-detalle .dt-section-title{ font-family:'Cormorant Garamond',serif; font-weight:600; font-size:calc(4.4vw * var(--dt-font-scale,1)); margin-bottom:0.8vh; color:var(--dt-ink); }
-  #screen-detalle .dt-text-block p{ font-size:calc(2.9vw * var(--dt-font-scale,1)); line-height:1.5; color:rgba(43,36,30,0.85); margin-bottom:0.8vh; }
+  #screen-detalle .dt-text-block{ display:flex; flex-direction:column; }
+  #screen-detalle .dt-section-title{ font-family:'Cormorant Garamond',serif; font-weight:600; font-size:calc(4.4vw * var(--dt-font-scale, 1)); margin-bottom:0.8vh; color:var(--dt-ink); }
+  #screen-detalle .dt-text-block p{ font-size:calc(2.9vw * var(--dt-font-scale, 1)); line-height:1.5; color:rgba(43,36,30,0.85); margin-bottom:0.8vh; }
   #screen-detalle .dt-text-block p:last-child{ margin-bottom:0; }
 
-  /* Timeline */
-  #screen-detalle .dt-timeline{ background:var(--dt-card); border-radius:14px; padding:1.4vh 4vw; flex-shrink:0; }
-  #screen-detalle .dt-timeline-row{ display:flex; align-items:center; padding:1vh 0; }
-  #screen-detalle .dt-timeline-row:not(:last-child){ border-bottom:1px dashed var(--dt-gold-soft); }
-  #screen-detalle .dt-timeline-track{ width:6vw; flex-shrink:0; position:relative; display:flex; align-items:center; justify-content:center; }
-  #screen-detalle .dt-timeline-track::before{ content:''; position:absolute; top:-1.4vh; bottom:-1.4vh; left:50%; width:1.5px; background:var(--dt-gold-soft); transform:translateX(-50%); z-index:0; }
-  #screen-detalle .dt-timeline-row:first-child .dt-timeline-track::before{ top:50%; }
-  #screen-detalle .dt-timeline-row:last-child .dt-timeline-track::before{ bottom:50%; }
-  #screen-detalle .dt-timeline-dot{ width:2.4vw; height:2.4vw; max-width:9px; max-height:9px; border-radius:50%; background:var(--dt-gold); position:relative; z-index:1; }
-  #screen-detalle .dt-timeline-content{ display:flex; flex-direction:column; margin-left:3vw; gap:0.2vh; min-width:0; }
-  #screen-detalle .dt-timeline-year{ font-size:calc(2.7vw * var(--dt-font-scale,1)); font-weight:700; color:var(--dt-gold); letter-spacing:0.03em; }
-  #screen-detalle .dt-timeline-text{ font-size:calc(2.7vw * var(--dt-font-scale,1)); line-height:1.4; color:var(--dt-ink); }
+  #screen-detalle .dt-timeline{ position:relative; background:var(--dt-card); border-radius:10px; padding:1.4vh 4vw 1.4vh 9vw; }
+  #screen-detalle .dt-timeline::before{ content:''; position:absolute; left:6vw; top:1.6vh; bottom:1.6vh; width:1px; background:var(--dt-gold-soft); }
+  #screen-detalle .dt-timeline-row{ position:relative; display:flex; align-items:center; gap:3vw; padding:0.9vh 0; border-bottom:1px dashed var(--dt-gold-soft); }
+  #screen-detalle .dt-timeline-row:last-child{ border-bottom:none; }
+  #screen-detalle .dt-timeline-dot{ position:absolute; left:-3.8vw; top:50%; transform:translateY(-50%); width:1.8vw; height:1.8vw; min-width:6px; min-height:6px; border-radius:50%; background:var(--dt-gold); }
+  #screen-detalle .dt-timeline-year{ font-weight:700; color:var(--dt-gold); font-size:calc(2.7vw * var(--dt-font-scale, 1)); flex-shrink:0; min-width:17vw; }
+  #screen-detalle .dt-timeline-text{ font-size:calc(2.7vw * var(--dt-font-scale, 1)); line-height:1.4; color:var(--dt-ink); }
 
-  /* Widget interactivo — imagen -> nombre -> descripción -> selectores, en flujo normal */
-  #screen-detalle .dt-widget{ display:flex; flex-direction:column; align-items:center; text-align:center; flex-shrink:0; }
-  #screen-detalle .dt-widget-img,
-  #screen-detalle .dt-widget-img-placeholder{ width:calc(38vw * var(--dt-image-scale,1)); height:calc(38vw * var(--dt-image-scale,1)); object-fit:cover; margin-bottom:1.2vh; }
-  #screen-detalle .dt-widget-img-placeholder{ background:#E4E1DA; color:#9B968C; display:flex; align-items:center; justify-content:center; font-size:2.2vw; }
-  #screen-detalle .dt-widget-name{ font-family:'Cormorant Garamond',serif; font-weight:600; font-size:calc(4.0vw * var(--dt-font-scale,1)); color:var(--dt-ink); margin-bottom:0.5vh; }
-  #screen-detalle .dt-widget-desc{ font-size:calc(2.8vw * var(--dt-font-scale,1)); line-height:1.45; color:rgba(43,36,30,0.85); max-width:88%; margin-bottom:1.2vh; }
+  /* Widget interactivo — Técnica */
+  #screen-detalle .dt-widget{ display:flex; flex-direction:column; align-items:center; }
+  #screen-detalle .dt-widget-image-wrap{ width:calc(40vw * var(--dt-image-scale, 1)); aspect-ratio:1/1; border-radius:50%; overflow:hidden; background:var(--dt-card); border:1px solid var(--dt-gold-soft); margin-bottom:1.1vh; flex-shrink:0; }
+  #screen-detalle .dt-widget-img{ width:100%; height:100%; object-fit:cover; display:block; }
+  #screen-detalle .dt-widget-name{ font-family:'Cormorant Garamond',serif; font-weight:600; font-size:calc(4.0vw * var(--dt-font-scale, 1)); margin-bottom:0.5vh; text-align:center; color:var(--dt-ink); }
+  #screen-detalle .dt-widget-desc{ font-size:calc(2.8vw * var(--dt-font-scale, 1)); line-height:1.5; text-align:center; max-width:92%; margin-bottom:1.1vh; color:rgba(43,36,30,0.85); }
   #screen-detalle .dt-widget-selectors{ display:flex; gap:2vw; }
-  #screen-detalle .dt-widget-btn{
-    background:transparent; border:1px solid var(--dt-gold-soft); color:var(--dt-gold);
-    font-family:'Inter',sans-serif; font-weight:600; font-size:calc(3.0vw * var(--dt-font-scale,1));
-    padding:0.6vh 3.5vw; border-radius:100px; cursor:pointer;
-  }
+  #screen-detalle .dt-widget-btn{ font-size:calc(3.0vw * var(--dt-font-scale, 1)); padding:0.7vh 3.4vw; border-radius:100px; border:1px solid var(--dt-gold-soft); background:transparent; color:var(--dt-ink); font-family:'Inter',sans-serif; font-weight:600; cursor:pointer; }
   #screen-detalle .dt-widget-btn.active{ background:var(--dt-gold); color:var(--dt-card); border-color:var(--dt-gold); }
 
-  /* Boxes académicos — ícono + texto, apilados verticalmente */
-  #screen-detalle .dt-boxes{ display:flex; flex-direction:column; gap:1.2vh; flex-shrink:0; }
-  #screen-detalle .dt-box{ display:flex; align-items:flex-start; gap:3vw; background:var(--dt-card); border-radius:12px; padding:1.6vh 4vw; }
-  #screen-detalle .dt-box-icon{ width:6vw; height:6vw; max-width:26px; max-height:26px; flex-shrink:0; color:var(--dt-gold); margin-top:0.2vh; }
-  #screen-detalle .dt-box-icon svg{ width:100%; height:100%; display:block; }
-  #screen-detalle .dt-box-title{ font-family:'Cormorant Garamond',serif; font-weight:600; font-size:calc(3.0vw * var(--dt-font-scale,1)); margin-bottom:0.3vh; color:var(--dt-ink); }
-  #screen-detalle .dt-box p{ font-size:calc(2.7vw * var(--dt-font-scale,1)); line-height:1.4; color:rgba(43,36,30,0.85); }
+  /* Box académico / tarjeta de contexto — mismo patrón ícono+texto apilado */
+  #screen-detalle .dt-boxes{ display:flex; flex-direction:column; gap:1.1vh; }
+  #screen-detalle .dt-box{ display:flex; align-items:flex-start; gap:3vw; background:var(--dt-card); border-radius:10px; padding:1.5vh 4vw; }
+  #screen-detalle .dt-box svg{ width:4.8vw; height:4.8vw; min-width:16px; min-height:16px; flex-shrink:0; color:var(--dt-gold); margin-top:0.3vh; }
+  #screen-detalle .dt-box-title{ font-weight:700; font-size:calc(3.0vw * var(--dt-font-scale, 1)); margin-bottom:0.3vh; color:var(--dt-ink); }
+  #screen-detalle .dt-box-text{ font-size:calc(2.7vw * var(--dt-font-scale, 1)); line-height:1.42; color:rgba(43,36,30,0.85); }
 </style>
-<script type="importmap">
-{
-  "imports": {
-    "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
-    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
-  }
-}
-</script>
 </head>
 <body>
 
 <div class="app-root">
 
-  <!-- ================= D — screen-display ================= -->
+  <!-- ============================= #screen-display (D) ============================= -->
   <div class="app-screen" id="screen-display">
-    <div class="screen">
+  <div class="screen-inner">
 
-      <header>
-        <div class="logo">
-          <img class="logo-mark" src="assets/logo.png" alt="Logo Fondo Nacional de las Artes">
-        </div>
-        <div class="back-link" onclick="volverAlEscaner()">
-          <span class="arrow">&#8592;</span>
-          <span>volver al escáner</span>
-        </div>
-      </header>
-
-      <div class="title-block">
-        <button class="badge" id="badgeBtn" type="button">Pieza de acervo <span class="badge-info-icon">i</span></button>
-        <h1>Mano en mármol Emperador</h1>
-        <div class="rule"></div>
-        <div class="subtitle">Escultura contemporánea — Colección Fondo Nacional de las Artes</div>
+    <header>
+      <div class="logo">
+        <img class="logo-mark" src="assets/logo.png" alt="Logo">
       </div>
-
-      <div class="info-overlay" id="infoOverlay">
-        <div class="info-box">
-          <button class="info-close" id="infoClose" type="button">&times;</button>
-          <div class="info-box-badge">Pieza de acervo</div>
-          <p>Esta obra fue incorporada al acervo del Fondo Nacional de las Artes a través del programa de apoyo a la producción escultórica contemporánea, orientado a sostener y difundir el trabajo en piedra natural dentro del panorama artístico argentino.</p>
-        </div>
+      <div class="back-link" onclick="volverAlEscaner()">
+        <span class="arrow">&#8592;</span>
+        <span>volver al escáner</span>
       </div>
+    </header>
 
-      <div id="hotspotPopupsContainer"></div>
-
-      <div class="viewer-wrap">
-        <div id="viewer3d">
-          <div class="loading-msg" id="loadingMsg">Cargando modelo 3D…</div>
-        </div>
-
-        <svg class="shadow-plane" viewBox="0 0 300 130" preserveAspectRatio="xMidYMid meet">
-          <defs>
-            <radialGradient id="shadowGradient" cx="50%" cy="50%" r="50%">
-              <stop offset="0%" stop-color="#000000" stop-opacity="1"/>
-              <stop offset="65%" stop-color="#000000" stop-opacity="0"/>
-            </radialGradient>
-          </defs>
-          <ellipse cx="150" cy="71" rx="145" ry="27.6" fill="url(#shadowGradient)"/>
-        </svg>
-
-        <svg class="rotate-arc-ring" viewBox="0 0 300 130" preserveAspectRatio="xMidYMid meet">
-          <defs>
-            <marker id="ringArrowStart" viewBox="0 0 12 12" refX="6" refY="6" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
-              <path d="M1 1 L11 6 L1 11 L4 6 Z" fill="currentColor"/>
-            </marker>
-            <marker id="ringArrowEnd" viewBox="0 0 12 12" refX="6" refY="6" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
-              <path d="M1 1 L11 6 L1 11 L4 6 Z" fill="currentColor"/>
-            </marker>
-          </defs>
-          <path d="M 64.4 54.7 A 121 23.1 0 0 0 29 71 A 121 23.1 0 0 0 150 94.1 A 121 23.1 0 0 0 271 71 A 121 23.1 0 0 0 235.6 54.7"
-                fill="none" stroke="currentColor" stroke-width="1.6" opacity="0.65"
-                marker-start="url(#ringArrowStart)" marker-end="url(#ringArrowEnd)"/>
-        </svg>
-
-        <div class="rotate-hint-text">
-          <div class="hand-icon-wrap"></div>
-          <span>Desliza para rotar</span>
-        </div>
-
-        <div id="hotspots3d"></div>
-      </div>
-
-      <button class="cta-detail" onclick="showDetalle()">
-        <div class="cta-icon">&#128214;</div>
-        <div style="flex:1;">
-          <div class="cta-title">Detalle de la obra</div>
-          <div class="cta-sub">Materialidad, proceso y contexto</div>
-        </div>
-        <div class="cta-arrow">&#8250;</div>
-      </button>
-
+    <div class="title-block">
+      <button class="badge" id="badgeBtn" type="button">Pieza de acervo <span class="badge-info-icon">i</span></button>
+      <h1>Mano en mármol Emperador</h1>
+      <div class="rule"></div>
+      <div class="subtitle">Escultura contemporánea — Colección Fondo Nacional de las Artes</div>
     </div>
-  </div>
 
-  <!-- ================= DT — screen-detalle ================= -->
+    <div class="info-overlay" id="infoOverlay">
+      <div class="info-box">
+        <button class="info-close" id="infoClose" type="button">&times;</button>
+        <div class="info-box-badge">Pieza de acervo</div>
+        <p>Esta obra fue incorporada al acervo del Fondo Nacional de las Artes a través del programa de apoyo a la producción escultórica contemporánea, orientado a sostener y difundir el trabajo en piedra natural dentro del panorama artístico argentino.</p>
+      </div>
+    </div>
+
+    <div id="hotspotPopupsContainer"></div>
+
+    <div class="viewer-wrap">
+      <div id="viewer3d">
+        <div class="loading-msg" id="loadingMsg">Cargando modelo 3D…</div>
+      </div>
+
+      <svg class="shadow-plane" viewBox="0 0 300 130" preserveAspectRatio="xMidYMid meet">
+        <defs>
+          <radialGradient id="shadowGradient" cx="50%" cy="50%" r="50%">
+            <stop offset="0%" stop-color="#000000" stop-opacity="1"/>
+            <stop offset="65%" stop-color="#000000" stop-opacity="0"/>
+          </radialGradient>
+        </defs>
+        <ellipse cx="150" cy="71" rx="145" ry="27.6" fill="url(#shadowGradient)"/>
+      </svg>
+
+      <svg class="rotate-arc-ring" viewBox="0 0 300 130" preserveAspectRatio="xMidYMid meet">
+        <defs>
+          <marker id="ringArrowStart" viewBox="0 0 12 12" refX="6" refY="6" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M1 1 L11 6 L1 11 L4 6 Z" fill="currentColor"/>
+          </marker>
+          <marker id="ringArrowEnd" viewBox="0 0 12 12" refX="6" refY="6" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M1 1 L11 6 L1 11 L4 6 Z" fill="currentColor"/>
+          </marker>
+        </defs>
+        <path d="M 64.4 54.7 A 121 23.1 0 0 0 29 71 A 121 23.1 0 0 0 150 94.1 A 121 23.1 0 0 0 271 71 A 121 23.1 0 0 0 235.6 54.7"
+              fill="none" stroke="currentColor" stroke-width="1.6" opacity="0.65"
+              marker-start="url(#ringArrowStart)" marker-end="url(#ringArrowEnd)"/>
+      </svg>
+
+      <div class="rotate-hint-text">
+        <div class="hand-icon-wrap"></div>
+        <span>Desliza para rotar</span>
+      </div>
+
+      <div id="hotspots3d"></div>
+    </div>
+
+    <button class="cta-detail" onclick="showDetalle()">
+      <div class="cta-icon">&#128214;</div>
+      <div style="flex:1;">
+        <div class="cta-title">Detalle de la obra</div>
+        <div class="cta-sub">Materialidad, proceso y contexto</div>
+      </div>
+      <div class="cta-arrow">&#8250;</div>
+    </button>
+
+  </div>
+  </div>
+  <!-- =========================== fin #screen-display =========================== -->
+
+  <!-- ============================= #screen-detalle (DT) ============================= -->
   <div class="app-screen" id="screen-detalle">
-    <div class="dt-screen">
+  <div class="dt-shell">
 
-      <div class="dt-header">
-        <div class="dt-back-link" onclick="showDisplay()">
-          <span class="arrow">&#8592;</span>
-          <span>Volver a la pieza</span>
-        </div>
-        <img class="dt-logo-mark" src="assets/logo.png" alt="Logo Fondo Nacional de las Artes">
+    <div class="dt-header">
+      <div class="dt-back-link" onclick="showDisplay()">
+        <span class="dt-arrow">&#8592;</span>
+        <span>Volver a la pieza</span>
       </div>
+      <img class="dt-logo-mark" src="assets/logo.png" alt="Logo">
+    </div>
 
-      <div class="dt-title-block">
-        <h1>Mano en mármol Emperador</h1>
-        <div class="dt-rule"></div>
-        <div class="dt-subtitle">Colección Fondo Nacional de las Artes</div>
-      </div>
+    <div class="dt-title-block">
+      <h1 class="dt-h1">Mano en mármol Emperador</h1>
+      <div class="dt-rule"></div>
+      <div class="dt-subtitle">Colección Fondo Nacional de las Artes</div>
+    </div>
 
-      <div class="dt-tabs-nav">
-        <button class="dt-tab-btn active" id="dt-btn-historia" onclick="showTab('historia')">Historia</button>
-        <button class="dt-tab-btn" id="dt-btn-tecnica" onclick="showTab('tecnica')">Técnica</button>
-        <button class="dt-tab-btn" id="dt-btn-contexto" onclick="showTab('contexto')">Contexto</button>
-      </div>
+    <div class="dt-tabs-nav">
+      <button class="dt-tab-btn active" data-tab="historia" onclick="showTab('historia')">Historia</button>
+      <button class="dt-tab-btn" data-tab="tecnica" onclick="showTab('tecnica')">Técnica</button>
+      <button class="dt-tab-btn" data-tab="contexto" onclick="showTab('contexto')">Contexto</button>
+    </div>
 
-      <div class="dt-content-area">
+    <div class="dt-content-area">
 
-        <!-- TAB: Historia -->
-        <div class="dt-tab-panel" id="dt-tab-historia">
-          <div class="dt-hero-group">
-            <img class="dt-hero-img dt-shape-rect" src="assets/detalle-historia-hero.jpg" alt="Mano en mármol Emperador — ilustración de historia"
-                 onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
-            <div class="dt-hero-placeholder dt-shape-rect" style="display:none;">[ imagen — detalle-historia-hero.jpg ]</div>
+      <!-- ===== TAB: Historia ===== -->
+      <div class="dt-tab-panel active" id="tab-historia">
 
-            <div class="dt-epigraph">
-              <div class="dt-epigraph-item" style="flex:1.25;">
-                <span class="dt-epigraph-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 21h16M5 21V9l7-5 7 5v12M8 21V11M12 21V11M16 21V11"/></svg></span>
-                <span>Buenos Aires, Argentina</span>
-              </div>
-              <div class="dt-epigraph-sep"></div>
-              <div class="dt-epigraph-item" style="flex:1.25;">
-                <span class="dt-epigraph-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M8 3v4M16 3v4M3 10h18"/></svg></span>
-                <span>Producción contemporánea</span>
-              </div>
-              <div class="dt-epigraph-sep"></div>
-              <div class="dt-epigraph-item" style="flex:0.8;">
-                <span class="dt-epigraph-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 8l9-5 9 5-9 5-9-5z"/><path d="M3 8v9l9 5 9-5V8M12 13v9"/></svg></span>
-                <span>Mármol Emperador</span>
-              </div>
+        <div class="dt-hero-group">
+          <img class="dt-hero-img" src="assets/detalle-historia-hero.jpg" alt="Mano en mármol Emperador"
+               onerror="imgFallback(this,'detalle-historia-hero.jpg')">
+          <div class="dt-epigraph">
+            <div class="dt-epigraph-item" style="flex:1.25;">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18M4 21V10l8-6 8 6v11M8 21v-7M12 21v-7M16 21v-7"/></svg>
+              <span>Buenos Aires, Argentina</span>
             </div>
-          </div>
-
-          <div class="dt-text-block">
-            <div class="dt-section-title">Origen y adquisición</div>
-            <p>Esta escultura fue incorporada al acervo del Fondo Nacional de las Artes como parte de su programa de apoyo a la producción escultórica contemporánea, orientado a sostener y visibilizar el trabajo en piedra natural dentro del panorama artístico argentino.</p>
-            <p>La elección de representar una mano responde a una larga tradición escultórica que utiliza el fragmento corporal como estudio de expresión, gesto y anatomía, sin necesidad de una figura completa.</p>
-          </div>
-
-          <div class="dt-timeline">
-            <div class="dt-timeline-row">
-              <div class="dt-timeline-track"><div class="dt-timeline-dot"></div></div>
-              <div class="dt-timeline-content">
-                <span class="dt-timeline-year">1958</span>
-                <span class="dt-timeline-text">Creación del Fondo Nacional de las Artes, con el objetivo de fomentar y financiar la producción artística nacional.</span>
-              </div>
+            <div class="dt-epigraph-divider"></div>
+            <div class="dt-epigraph-item" style="flex:1.25;">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="5" width="17" height="15" rx="2"/><path d="M3.5 9.5h17M8 3v4M16 3v4"/></svg>
+              <span>Producción contemporánea</span>
             </div>
-            <div class="dt-timeline-row">
-              <div class="dt-timeline-track"><div class="dt-timeline-dot"></div></div>
-              <div class="dt-timeline-content">
-                <span class="dt-timeline-year">1980–1990</span>
-                <span class="dt-timeline-text">Renovado interés por la escultura en piedra dentro de la producción contemporánea argentina, en diálogo con tradiciones clásicas europeas.</span>
-              </div>
-            </div>
-            <div class="dt-timeline-row">
-              <div class="dt-timeline-track"><div class="dt-timeline-dot"></div></div>
-              <div class="dt-timeline-content">
-                <span class="dt-timeline-year">2000–2010</span>
-                <span class="dt-timeline-text">Consolidación de talleres de talla en piedra natural en el país, con acceso a mármoles importados como el Emperador.</span>
-              </div>
-            </div>
-            <div class="dt-timeline-row">
-              <div class="dt-timeline-track"><div class="dt-timeline-dot"></div></div>
-              <div class="dt-timeline-content">
-                <span class="dt-timeline-year">2018</span>
-                <span class="dt-timeline-text">La obra ingresa al acervo del Fondo Nacional de las Artes mediante el programa de apoyo a las artes visuales.</span>
-              </div>
+            <div class="dt-epigraph-divider"></div>
+            <div class="dt-epigraph-item" style="flex:0.8;">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 8l8.5-4 8.5 4-8.5 4-8.5-4z"/><path d="M3.5 8v9l8.5 4 8.5-4V8"/><path d="M12 12v9"/></svg>
+              <span>Mármol Emperador</span>
             </div>
           </div>
         </div>
 
-        <!-- TAB: Técnica -->
-        <div class="dt-tab-panel" id="dt-tab-tecnica" style="display:none;">
-          <div class="dt-widget">
-            <img class="dt-widget-img dt-shape-circle" id="widgetImg" src="assets/detalle-tecnica-desbaste.jpg" alt="Desbaste"
-                 onerror="this.style.display='none'; document.getElementById('widgetImgPlaceholder').style.display='flex';">
-            <div class="dt-widget-img-placeholder dt-shape-circle" id="widgetImgPlaceholder" style="display:none;">[ imagen ]</div>
-            <div class="dt-widget-name" id="widgetName">Desbaste</div>
-            <div class="dt-widget-desc" id="widgetDesc">Primera etapa de talla: se retira el volumen sobrante del bloque de mármol con puntero y maza, definiendo la silueta general de la mano.</div>
-            <div class="dt-widget-selectors">
-              <button class="dt-widget-btn active" id="dt-widget-btn-0" onclick="selectWidgetVariant(0)">Desbaste</button>
-              <button class="dt-widget-btn" id="dt-widget-btn-1" onclick="selectWidgetVariant(1)">Pulido</button>
-              <button class="dt-widget-btn" id="dt-widget-btn-2" onclick="selectWidgetVariant(2)">Abrillantado</button>
-            </div>
-          </div>
+        <div class="dt-text-block">
+          <div class="dt-section-title">Origen y adquisición</div>
+          <p>Esta escultura fue incorporada al acervo del Fondo Nacional de las Artes como parte de su programa de apoyo a la producción escultórica contemporánea, orientado a sostener y visibilizar el trabajo en piedra natural dentro del panorama artístico argentino.</p>
+          <p>La elección de representar una mano responde a una larga tradición escultórica que utiliza el fragmento corporal como estudio de expresión, gesto y anatomía, sin necesidad de una figura completa.</p>
+        </div>
 
-          <div class="dt-boxes">
-            <div class="dt-box">
-              <span class="dt-box-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 9l3-4h10l3 4-3 11H7L4 9z"/><path d="M4 9h16"/></svg></span>
-              <div>
-                <div class="dt-box-title">Material</div>
-                <p>Mármol Emperador, piedra caliza metamórfica de tonalidad oscura y veteado dorado, apreciada en escultura por su densidad y capacidad de pulido.</p>
-              </div>
-            </div>
-            <div class="dt-box">
-              <span class="dt-box-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14 4l6 6-2 2-6-6 2-2z"/><path d="M12 8l-8 8v4h4l8-8"/></svg></span>
-              <div>
-                <div class="dt-box-title">Proceso</div>
-                <p>Combina desbaste, pulido y abrillantado en un proceso manual de varias semanas sobre un único bloque.</p>
-              </div>
-            </div>
-            <div class="dt-box">
-              <span class="dt-box-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="4"/><rect x="13" y="13" width="8" height="8"/></svg></span>
-              <div>
-                <div class="dt-box-title">Detalles formales</div>
-                <p>Estudio anatómico de una mano en reposo, con especial atención al tratamiento de nudillos, uñas y pliegues de la piel.</p>
-              </div>
-            </div>
+        <div class="dt-timeline">
+          <div class="dt-timeline-row"><span class="dt-timeline-dot"></span><div class="dt-timeline-year">1958</div><div class="dt-timeline-text">Creación del Fondo Nacional de las Artes, con el objetivo de fomentar y financiar la producción artística nacional.</div></div>
+          <div class="dt-timeline-row"><span class="dt-timeline-dot"></span><div class="dt-timeline-year">1980–1990</div><div class="dt-timeline-text">Renovado interés por la escultura en piedra dentro de la producción contemporánea argentina, en diálogo con tradiciones clásicas europeas.</div></div>
+          <div class="dt-timeline-row"><span class="dt-timeline-dot"></span><div class="dt-timeline-year">2000–2010</div><div class="dt-timeline-text">Consolidación de talleres de talla en piedra natural en el país, con acceso a mármoles importados como el Emperador.</div></div>
+          <div class="dt-timeline-row"><span class="dt-timeline-dot"></span><div class="dt-timeline-year">2018</div><div class="dt-timeline-text">La obra ingresa al acervo del Fondo Nacional de las Artes mediante el programa de apoyo a las artes visuales.</div></div>
+        </div>
+
+      </div>
+
+      <!-- ===== TAB: Técnica ===== -->
+      <div class="dt-tab-panel" id="tab-tecnica">
+
+        <div class="dt-widget">
+          <div class="dt-widget-image-wrap">
+            <img class="dt-widget-img" id="widgetImg" src="assets/detalle-tecnica-desbaste.jpg" alt="Desbaste"
+                 onerror="imgFallback(this,'detalle-tecnica-desbaste.jpg')">
+          </div>
+          <div class="dt-widget-name" id="widgetName">Desbaste</div>
+          <div class="dt-widget-desc" id="widgetDesc">Primera etapa de talla: se retira el volumen sobrante del bloque de mármol con puntero y maza, definiendo la silueta general de la mano.</div>
+          <div class="dt-widget-selectors">
+            <button class="dt-widget-btn active" data-idx="0" onclick="selectWidget(0)">Desbaste</button>
+            <button class="dt-widget-btn" data-idx="1" onclick="selectWidget(1)">Pulido</button>
+            <button class="dt-widget-btn" data-idx="2" onclick="selectWidget(2)">Abrillantado</button>
           </div>
         </div>
 
-        <!-- TAB: Contexto -->
-        <div class="dt-tab-panel" id="dt-tab-contexto" style="display:none;">
-          <img class="dt-hero-img dt-shape-rect" src="assets/detalle-contexto-hero.jpg" alt="Mano en mármol Emperador — ilustración de contexto"
-               onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
-          <div class="dt-hero-placeholder dt-shape-rect" style="display:none;">[ imagen — detalle-contexto-hero.jpg ]</div>
-
-          <div class="dt-boxes">
-            <div class="dt-box">
-              <span class="dt-box-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M8 13V6a1.5 1.5 0 013 0v6M11 12V4.5a1.5 1.5 0 013 0V12M14 12V6a1.5 1.5 0 013 0v7M17 13v-2a1.5 1.5 0 013 0v5a5 5 0 01-5 5h-2a6 6 0 01-5-3l-2.5-4a1.4 1.4 0 012.3-1.6L8 13"/></svg></span>
-              <div>
-                <div class="dt-box-title">El fragmento como forma</div>
-                <p>La representación de manos, sin el resto del cuerpo, es un recurso recurrente en la escultura moderna y contemporánea para concentrar la atención en el gesto y la expresión.</p>
-              </div>
+        <div class="dt-boxes">
+          <div class="dt-box">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9l3-4h10l3 4-3 11H7L4 9z"/><path d="M4 9h16"/></svg>
+            <div>
+              <div class="dt-box-title">Material</div>
+              <div class="dt-box-text">Mármol Emperador, piedra caliza metamórfica de tonalidad oscura y veteado dorado, apreciada en escultura por su densidad y capacidad de pulido.</div>
             </div>
-            <div class="dt-box">
-              <span class="dt-box-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 9l3-4h10l3 4-3 11H7L4 9z"/><path d="M4 9h16"/></svg></span>
-              <div>
-                <div class="dt-box-title">El mármol como material noble</div>
-                <p>El mármol ha sido históricamente asociado a la permanencia y el prestigio en la escultura occidental, condición que se traslada también a la producción contemporánea.</p>
-              </div>
+          </div>
+          <div class="dt-box">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M14 4l6 6-8 8-6-2 8-8z"/><path d="M6 16l-3 5"/></svg>
+            <div>
+              <div class="dt-box-title">Proceso</div>
+              <div class="dt-box-text">Combina desbaste, pulido y abrillantado en un proceso manual de varias semanas sobre un único bloque.</div>
             </div>
-            <div class="dt-box">
-              <span class="dt-box-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M17 2l4 4-4 4"/><path d="M21 6H8a5 5 0 00-5 5"/><path d="M7 22l-4-4 4-4"/><path d="M3 18h13a5 5 0 005-5"/></svg></span>
-              <div>
-                <div class="dt-box-title">Circulación de materiales</div>
-                <p>El acceso a variedades de mármol importado, como el Emperador, refleja las redes de comercio de piedra ornamental que abastecen a talleres de escultura en toda la región.</p>
-              </div>
+          </div>
+          <div class="dt-box">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l9 16H3z"/><path d="M12 9l4.5 8h-9z"/></svg>
+            <div>
+              <div class="dt-box-title">Detalles formales</div>
+              <div class="dt-box-text">Estudio anatómico de una mano en reposo, con especial atención al tratamiento de nudillos, uñas y pliegues de la piel.</div>
             </div>
           </div>
         </div>
 
       </div>
+
+      <!-- ===== TAB: Contexto ===== -->
+      <div class="dt-tab-panel" id="tab-contexto">
+
+        <div class="dt-hero-group dt-hero-only">
+          <img class="dt-hero-img" src="assets/detalle-contexto-hero.jpg" alt="Contexto"
+               onerror="imgFallback(this,'detalle-contexto-hero.jpg')">
+        </div>
+
+        <div class="dt-boxes">
+          <div class="dt-box">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M8 13V5a1.5 1.5 0 013 0v6"/><path d="M11 11V4a1.5 1.5 0 013 0v7"/><path d="M14 11V5a1.5 1.5 0 013 0v8"/><path d="M17 13V8a1.5 1.5 0 013 0v6c0 4-2.5 7-6.5 7h-2C8 21 6 19 6 16v-3l-1.5-2A1.3 1.3 0 016 9l2 2"/></svg>
+            <div>
+              <div class="dt-box-title">El fragmento como forma</div>
+              <div class="dt-box-text">La representación de manos, sin el resto del cuerpo, es un recurso recurrente en la escultura moderna y contemporánea para concentrar la atención en el gesto y la expresión.</div>
+            </div>
+          </div>
+          <div class="dt-box">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9l3-4h10l3 4-3 11H7L4 9z"/><path d="M4 9h16"/></svg>
+            <div>
+              <div class="dt-box-title">El mármol como material noble</div>
+              <div class="dt-box-text">El mármol ha sido históricamente asociado a la permanencia y el prestigio en la escultura occidental, condición que se traslada también a la producción contemporánea.</div>
+            </div>
+          </div>
+          <div class="dt-box">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12a8 8 0 0113.5-5.8M20 12a8 8 0 01-13.5 5.8"/><path d="M17.5 3.5v3h-3M6.5 20.5v-3h3"/></svg>
+            <div>
+              <div class="dt-box-title">Circulación de materiales</div>
+              <div class="dt-box-text">El acceso a variedades de mármol importado, como el Emperador, refleja las redes de comercio de piedra ornamental que abastecen a talleres de escultura en toda la región.</div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
     </div>
   </div>
+  </div>
+  <!-- =========================== fin #screen-detalle =========================== -->
 
 </div>
 
-<!-- ============================================================
-     Navegación interna (Arquitectura_de_Archivo_Unico.pdf) — sin cambio
-     de URL real entre D y DT. La única excepción real de URL es volver
-     al escáner raíz.
-     ============================================================ -->
 <script>
-  function showDetalle(){
-    document.getElementById('screen-display').classList.add('slide-out');
-    document.getElementById('screen-detalle').classList.add('slide-in');
-    // Fuerza el recálculo de fit-to-space del tab activo al entrar al DT.
-    fitActiveTab();
-  }
-  function showDisplay(){
-    document.getElementById('screen-display').classList.remove('slide-out');
-    document.getElementById('screen-detalle').classList.remove('slide-in');
-  }
-  function volverAlEscaner(){
-    window.location.href = '../../index.html?volver=1';
-  }
-</script>
-
-<!-- Bloqueo de zoom / gestos accidentales (LEY 5) -->
-<script>
+  // ---- Bloqueo de zoom / doble-tap (LEY 5, global a ambas pantallas) ----
   document.addEventListener('touchmove', (e) => {
     if (e.touches.length > 1) e.preventDefault();
   }, { passive: false });
@@ -523,8 +440,8 @@
   }, { passive: false });
 </script>
 
-<!-- Manejo de errores (Arquitectura_de_Archivo_Unico.pdf) -->
 <script>
+  // ---- Manejo de errores del D (Display_Instrucciones.pdf) ----
   window.addEventListener('error', (e) => {
     const el = document.getElementById('loadingMsg');
     if (el) {
@@ -540,6 +457,7 @@
     }
   });
 
+  // ---- Badge del D ----
   const badgeBtn = document.getElementById('badgeBtn');
   const infoOverlay = document.getElementById('infoOverlay');
   const infoClose = document.getElementById('infoClose');
@@ -550,97 +468,142 @@
   });
 </script>
 
-<!-- ============================================================
-     DT — tabs, widget interactivo y fit-to-space
-     (Pantalla_Detalle_Instrucciones.pdf: reducir --dt-image-scale primero,
-     piso 45%; luego --dt-font-scale, piso 80%; los gap en vh nunca se
-     reducen; corre por tab, al mostrarse y en cada resize.)
-     ============================================================ -->
 <script>
-  const WIDGET_VARIANTS = [
-    { name: 'Desbaste', desc: 'Primera etapa de talla: se retira el volumen sobrante del bloque de mármol con puntero y maza, definiendo la silueta general de la mano.', img: 'assets/detalle-tecnica-desbaste.jpg' },
-    { name: 'Pulido', desc: 'Refinado de la superficie con abrasivos progresivamente más finos, que revela el veteado característico del mármol Emperador.', img: 'assets/detalle-tecnica-pulido.jpg' },
-    { name: 'Abrillantado', desc: 'Tratamiento final con paños y compuestos de pulido que produce el acabado satinado propio de la piedra trabajada a mano.', img: 'assets/detalle-tecnica-abrillantado.jpg' },
-  ];
-
-  function selectWidgetVariant(idx){
-    const v = WIDGET_VARIANTS[idx];
-    const img = document.getElementById('widgetImg');
-    const placeholder = document.getElementById('widgetImgPlaceholder');
-    img.style.display = '';
-    placeholder.style.display = 'none';
-    img.src = v.img;
-    img.alt = v.name;
-    document.getElementById('widgetName').textContent = v.name;
-    document.getElementById('widgetDesc').textContent = v.desc;
-    WIDGET_VARIANTS.forEach((_, i) => {
-      document.getElementById('dt-widget-btn-' + i).classList.toggle('active', i === idx);
-    });
-    fitActiveTab();
+  // ---- Placeholder gris con nombre de asset, para assets aún no subidos ----
+  // Usado por imágenes de hero (Historia/Contexto) y del widget (Técnica),
+  // que según Pantalla_Detalle_Instrucciones.pdf deben ser hijos directos
+  // únicos de su contenedor — se reemplaza el propio <img> por un SVG inline,
+  // sin agregar elementos hermanos que rompan esa estructura.
+  function imgFallback(el, label) {
+    el.onerror = null;
+    const svg = '<svg xmlns="http://www.w3.org/2000/svg" width="400" height="300">' +
+      '<rect width="400" height="300" fill="#E4E1DA"/>' +
+      '<text x="50%" y="50%" fill="#9B968C" font-family="Inter,sans-serif" font-size="16" text-anchor="middle" dominant-baseline="middle">' + label + '</text>' +
+      '</svg>';
+    el.src = 'data:image/svg+xml;utf8,' + encodeURIComponent(svg);
   }
-
-  const TAB_IDS = ['historia', 'tecnica', 'contexto'];
-
-  function showTab(tab){
-    TAB_IDS.forEach((id) => {
-      document.getElementById('dt-tab-' + id).style.display = (id === tab) ? 'flex' : 'none';
-      document.getElementById('dt-btn-' + id).classList.toggle('active', id === tab);
-    });
-    fitActiveTab();
-  }
-
-  function fitToSpace(panelEl){
-    if (!panelEl) return;
-    let fontScale = 1;
-    let imageScale = 1;
-    panelEl.style.setProperty('--dt-font-scale', fontScale);
-    panelEl.style.setProperty('--dt-image-scale', imageScale);
-
-    let guard = 0;
-    // Reflow forzado leyendo scrollHeight/clientHeight en cada paso.
-    while (panelEl.scrollHeight > panelEl.clientHeight && guard < 40) {
-      if (imageScale > 0.45) {
-        imageScale = Math.max(0.45, +(imageScale - 0.05).toFixed(2));
-        panelEl.style.setProperty('--dt-image-scale', imageScale);
-      } else if (fontScale > 0.8) {
-        fontScale = Math.max(0.8, +(fontScale - 0.05).toFixed(2));
-        panelEl.style.setProperty('--dt-font-scale', fontScale);
-      } else {
-        break; // Piso mínimo alcanzado — problema de contenido a resolver en el BT.
-      }
-      guard++;
-    }
-  }
-
-  function fitActiveTab(){
-    const activeId = TAB_IDS.find((id) => document.getElementById('dt-tab-' + id).style.display !== 'none') || 'historia';
-    fitToSpace(document.getElementById('dt-tab-' + activeId));
-  }
-
-  window.addEventListener('resize', fitActiveTab);
-  window.addEventListener('load', fitActiveTab);
 </script>
 
-<!-- ============================================================
-     Motor 3D del D — verbatim de display-base.html. El BT solo pisa
-     MODEL_URL, MATERIAL_CONFIG, HOTSPOTS_3D (posición 3D + contenido de
-     cada popup, según BT de esta pieza).
-     ============================================================ -->
+<script>
+  // ---- Navegación interna D <-> DT (Arquitectura_De_Archivo_Unico.pdf) ----
+  const screenDisplay = document.getElementById('screen-display');
+  const screenDetalle = document.getElementById('screen-detalle');
+
+  function showDetalle() {
+    screenDisplay.classList.add('slide-out');
+    screenDetalle.classList.add('slide-in');
+    // recalcular fit-to-space del tab actualmente activo al entrar a Detalle
+    requestAnimationFrame(() => fitTabToSpace(getActivePanel()));
+  }
+  function showDisplay() {
+    screenDisplay.classList.remove('slide-out');
+    screenDetalle.classList.remove('slide-in');
+  }
+  function volverAlEscaner() {
+    window.location.href = '../../index.html?volver=1';
+  }
+</script>
+
+<script>
+  // ---- Tabs de Detalle + rutina de fit-to-space (Pantalla_Detalle_Instrucciones.pdf) ----
+  const TAB_IDS = ['historia', 'tecnica', 'contexto'];
+
+  function getActivePanel() {
+    return document.querySelector('.dt-tab-panel.active');
+  }
+
+  function showTab(name) {
+    TAB_IDS.forEach((id) => {
+      document.getElementById('tab-' + id).classList.toggle('active', id === name);
+      document.querySelector('.dt-tab-btn[data-tab="' + id + '"]').classList.toggle('active', id === name);
+    });
+    // La rutina corre siempre que un tab pasa a visible — un panel con
+    // display:none mide scrollHeight:0, así que solo tiene sentido medirlo
+    // ya activo (ver regla 4 de la jerarquía de sacrificio).
+    requestAnimationFrame(() => fitTabToSpace(document.getElementById('tab-' + name)));
+  }
+
+  // Reduce primero --dt-image-scale (piso 45%) y luego --dt-font-scale (piso 80%),
+  // en pasos de 5%, hasta que el contenido entre sin overflow. Los gap entre
+  // bloques (en vh) nunca se tocan por este mecanismo.
+  function fitTabToSpace(panel) {
+    if (!panel) return;
+    let imageScale = 100;
+    let fontScale = 100;
+    panel.style.setProperty('--dt-image-scale', 1);
+    panel.style.setProperty('--dt-font-scale', 1);
+
+    const fits = () => panel.scrollHeight <= panel.clientHeight + 1;
+
+    let guard = 0;
+    while (!fits() && imageScale > 45 && guard < 20) {
+      imageScale -= 5;
+      panel.style.setProperty('--dt-image-scale', imageScale / 100);
+      guard++;
+    }
+    guard = 0;
+    while (!fits() && fontScale > 80 && guard < 20) {
+      fontScale -= 5;
+      panel.style.setProperty('--dt-font-scale', fontScale / 100);
+      guard++;
+    }
+    // Si con el piso mínimo sigue sin entrar, es un problema de contenido a
+    // resolver en el BT (acortar texto) — no se sigue reduciendo por debajo del piso.
+  }
+
+  window.addEventListener('resize', () => {
+    fitTabToSpace(getActivePanel());
+  });
+
+  document.addEventListener('DOMContentLoaded', () => {
+    fitTabToSpace(document.getElementById('tab-historia'));
+  });
+</script>
+
+<script>
+  // ---- Widget interactivo — Técnica ----
+  const WIDGET_VARIANTS = [
+    {
+      name: 'Desbaste',
+      desc: 'Primera etapa de talla: se retira el volumen sobrante del bloque de mármol con puntero y maza, definiendo la silueta general de la mano.',
+      image: 'assets/detalle-tecnica-desbaste.jpg',
+    },
+    {
+      name: 'Pulido',
+      desc: 'Refinado de la superficie con abrasivos progresivamente más finos, que revela el veteado característico del mármol Emperador.',
+      image: 'assets/detalle-tecnica-pulido.jpg',
+    },
+    {
+      name: 'Abrillantado',
+      desc: 'Tratamiento final con paños y compuestos de pulido que produce el acabado satinado propio de la piedra trabajada a mano.',
+      image: 'assets/detalle-tecnica-abrillantado.jpg',
+    },
+  ];
+
+  function selectWidget(idx) {
+    const v = WIDGET_VARIANTS[idx];
+    const img = document.getElementById('widgetImg');
+    img.onerror = null;
+    img.src = v.image;
+    img.alt = v.name;
+    img.onerror = () => imgFallback(img, v.image.split('/').pop());
+    document.getElementById('widgetName').textContent = v.name;
+    document.getElementById('widgetDesc').textContent = v.desc;
+    document.querySelectorAll('.dt-widget-btn').forEach((btn, i) => {
+      btn.classList.toggle('active', i === idx);
+    });
+    requestAnimationFrame(() => fitTabToSpace(document.getElementById('tab-tecnica')));
+  }
+</script>
+
 <script type="module">
   import * as THREE from 'three';
   import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 
   document.getElementById('loadingMsg').textContent = 'Módulos cargados. Iniciando escena 3D…';
 
-  // BT — Mano en mármol Emperador (Fondo Nacional de las Artes)
+  // Modelo real de la pieza (BT).
   const MODEL_URL = 'assets/hand_sculpture.glb';
-
-  if (!MODEL_URL) {
-    document.getElementById('loadingMsg').className = 'error-msg';
-    document.getElementById('loadingMsg').innerHTML =
-      'MODEL_URL no fue completado.<br><span style="font-size:0.8em;opacity:0.7;">Reemplazá la constante MODEL_URL con la URL real del .glb de esta pieza.</span>';
-    throw new Error('MODEL_URL vacío — completar antes de desplegar.');
-  }
 
   const mount = document.getElementById('viewer3d');
   const loadingMsg = document.getElementById('loadingMsg');
@@ -665,8 +628,6 @@
   fillLight.position.set(-3, 1, -2);
   scene.add(fillLight);
 
-  // Environment map generado por código (sin HDR externo) — necesario para
-  // que metales/superficies con metalness no se vean planos.
   const pmremGenerator = new THREE.PMREMGenerator(renderer);
   const envScene = new THREE.Scene();
   envScene.background = new THREE.Color(0xf0f0f0);
@@ -683,9 +644,6 @@
   const modelGroup = new THREE.Group();
   scene.add(modelGroup);
 
-  // Centro XZ real de la base (promedio de vértices en el 8% inferior de la
-  // altura), no el centro geométrico de todo el bounding box — relevante en
-  // esta pieza por la asimetría de los dedos extendidos.
   function computeBaseFootprintCenter(model, box, thresholdFraction = 0.08) {
     const yThreshold = box.min.y + (box.max.y - box.min.y) * thresholdFraction;
     let sumX = 0, sumZ = 0, count = 0;
@@ -724,15 +682,14 @@
     }
   }, 15000);
 
-  // BT — Cerámica/piedra/madera con excepción puntual: mármol pulido con
-  // acabado abrillantado (roughness 0.35 en vez del rango genérico 0.7–0.9),
-  // metalness prácticamente nulo (0.05) porque sigue sin ser un metal.
+  // Material — Cerámica/piedra/madera con excepción puntual del BT (mármol
+  // pulido/abrillantado, no piedra en bruto): roughness 0.35 en vez del rango
+  // genérico 0.7–0.9, metalness prácticamente nulo (0.05).
   const MATERIAL_CONFIG = {
     metalness: 0.05,
     roughness: 0.35,
   };
 
-  // Parche de material legacy — KHR_materials_pbrSpecularGlossiness.
   async function applySpecGlossTextureManually(gltf) {
     const json = gltf.parser.json;
     if (!json.extensionsUsed || !json.extensionsUsed.includes('KHR_materials_pbrSpecularGlossiness')) {
@@ -764,16 +721,20 @@
     }
   }
 
-  // ---------- HOTSPOTS ANCLADOS EN 3D ----------
-  // BT — Mano en mármol Emperador: 3 hotspots (muñeca y base / dorso y venas /
-  // yemas de los dedos), definidos como { azimuthDeg, heightFraction }.
+  // Hotspots del BT (Mano en mármol Emperador).
   const HOTSPOTS_3D = [
-    { id: 'hotspot-1', azimuthDeg: 10,  heightFraction: 0.08, label: 'Muñeca y base',
-      popupTitle: 'Muñeca y base', popupText: 'La base de la escultura mantiene un pulido liso y continuo, en contraste deliberado con el tratamiento más matérico del resto de la pieza, y funciona como apoyo visual y físico de la composición.', popupImage: 'assets/hotspot-1.jpg' },
+    { id: 'hotspot-1', azimuthDeg: 10, heightFraction: 0.08, label: 'Muñeca y base',
+      popupTitle: 'Muñeca y base',
+      popupText: 'La base de la escultura mantiene un pulido liso y continuo, en contraste deliberado con el tratamiento más matérico del resto de la pieza, y funciona como apoyo visual y físico de la composición.',
+      popupImage: 'assets/hotspot-1.jpg' },
     { id: 'hotspot-2', azimuthDeg: 130, heightFraction: 0.55, label: 'Dorso y venas',
-      popupTitle: 'Dorso y venas', popupText: 'El veteado dorado característico del mármol Emperador se alinea con el trazado anatómico de las venas talladas en el dorso de la mano, funcionando como un recurso formal además de decorativo.', popupImage: 'assets/hotspot-2.jpg' },
+      popupTitle: 'Dorso y venas',
+      popupText: 'El veteado dorado característico del mármol Emperador se alinea con el trazado anatómico de las venas talladas en el dorso de la mano, funcionando como un recurso formal además de decorativo.',
+      popupImage: 'assets/hotspot-2.jpg' },
     { id: 'hotspot-3', azimuthDeg: 260, heightFraction: 0.92, label: 'Yemas de los dedos',
-      popupTitle: 'Yemas de los dedos', popupText: 'Las yemas reciben el grado más alto de pulido de toda la pieza, buscando capturar reflejos de luz que acentúan la sensación de delicadeza en el gesto de la mano.', popupImage: 'assets/hotspot-3.jpg' },
+      popupTitle: 'Yemas de los dedos',
+      popupText: 'Las yemas reciben el grado más alto de pulido de toda la pieza, buscando capturar reflejos de luz que acentúan la sensación de delicadeza en el gesto de la mano.',
+      popupImage: 'assets/hotspot-3.jpg' },
   ];
 
   const hotspotContainer = document.getElementById('hotspots3d');
@@ -847,6 +808,85 @@
   }
   createHotspotElements();
 
+  loader.load(
+    MODEL_URL,
+    async (gltf) => {
+      loadResolved = true;
+      clearTimeout(timeoutId);
+      loadingMsg.remove();
+      const model = gltf.scene;
+      const box = new THREE.Box3().setFromObject(model);
+      const size = box.getSize(new THREE.Vector3());
+
+      const TARGET_WIDTH_FRACTION = 0.63;
+      const cameraDistance = camera.position.z;
+      const vFov = (camera.fov * Math.PI) / 180;
+      const visibleHeightAtDistance = 2 * Math.tan(vFov / 2) * cameraDistance;
+      const visibleWidthAtDistance = visibleHeightAtDistance * camera.aspect;
+
+      const horizontalExtent = Math.max(size.x, size.z);
+      const scale = (visibleWidthAtDistance * TARGET_WIDTH_FRACTION) / horizontalExtent;
+
+      model.scale.setScalar(scale);
+      model.position.y = -box.min.y * scale;
+
+      const footprint = computeBaseFootprintCenter(model, box);
+      model.position.x = -footprint.x * scale;
+      model.position.z = -footprint.z * scale;
+
+      modelGroup.add(model);
+
+      modelBoxForHotspots = new THREE.Box3().setFromObject(model);
+      modelCenterForHotspots = modelBoxForHotspots.getCenter(new THREE.Vector3());
+      computeHotspotAnchors(model);
+
+      try {
+        await applySpecGlossTextureManually(gltf);
+      } catch (e) {
+        console.warn('No se pudo aplicar la textura manualmente:', e);
+      }
+    },
+    (progress) => {
+      if (progress.total) {
+        const pct = Math.round((progress.loaded / progress.total) * 100);
+        loadingMsg.textContent = `Cargando modelo 3D… ${pct}%`;
+      }
+    },
+    (err) => {
+      loadResolved = true;
+      clearTimeout(timeoutId);
+      console.error('Error cargando GLB:', err);
+      loadingMsg.className = 'error-msg';
+      loadingMsg.innerHTML = 'No se pudo cargar el modelo 3D.<br><span style="font-size:0.8em;opacity:0.7;">' + MODEL_URL + '</span>';
+    }
+  );
+
+  let isDragging = false;
+  let prevX = 0;
+  let rotY = 0;
+
+  function onDown(x) { isDragging = true; prevX = x; }
+  function onMove(x) {
+    if (!isDragging) return;
+    const dx = x - prevX;
+    rotY += dx * 0.01;
+    modelGroup.rotation.y = rotY;
+    prevX = x;
+  }
+  function onUp() { isDragging = false; }
+
+  renderer.domElement.addEventListener('mousedown', (e) => onDown(e.clientX));
+  window.addEventListener('mousemove', (e) => onMove(e.clientX));
+  window.addEventListener('mouseup', onUp);
+
+  renderer.domElement.addEventListener('touchstart', (e) => {
+    if (e.touches.length === 1) onDown(e.touches[0].clientX);
+  }, { passive: true });
+  renderer.domElement.addEventListener('touchmove', (e) => {
+    if (e.touches.length === 1) onMove(e.touches[0].clientX);
+  }, { passive: true });
+  renderer.domElement.addEventListener('touchend', onUp);
+
   const HOTSPOT_LINE_LENGTH = 0.55;
   const SCREEN_CLAMP_MARGIN = 18;
 
@@ -917,10 +957,10 @@
       const els = hotspotElements[h.id];
       if (!els) return;
 
-      const wv = mount.clientWidth;
-      const hv = mount.clientHeight;
-      const clampedX = Math.max(SCREEN_CLAMP_MARGIN, Math.min(wv - SCREEN_CLAMP_MARGIN, numberScreen.x));
-      const clampedY = Math.max(SCREEN_CLAMP_MARGIN, Math.min(hv - SCREEN_CLAMP_MARGIN, numberScreen.y));
+      const w2 = mount.clientWidth;
+      const hgt = mount.clientHeight;
+      const clampedX = Math.max(SCREEN_CLAMP_MARGIN, Math.min(w2 - SCREEN_CLAMP_MARGIN, numberScreen.x));
+      const clampedY = Math.max(SCREEN_CLAMP_MARGIN, Math.min(hgt - SCREEN_CLAMP_MARGIN, numberScreen.y));
 
       els.number.style.display = numberScreen.behindCamera ? 'none' : 'flex';
       els.number.style.left = `${clampedX}px`;
@@ -946,89 +986,6 @@
       els.line.setAttribute('y2', clampedY);
     });
   }
-
-  loader.load(
-    MODEL_URL,
-    async (gltf) => {
-      loadResolved = true;
-      clearTimeout(timeoutId);
-      loadingMsg.remove();
-      const model = gltf.scene;
-      const box = new THREE.Box3().setFromObject(model);
-      const size = box.getSize(new THREE.Vector3());
-
-      const TARGET_WIDTH_FRACTION = 0.63;
-      const cameraDistance = camera.position.z;
-      const vFov = (camera.fov * Math.PI) / 180;
-      const visibleHeightAtDistance = 2 * Math.tan(vFov / 2) * cameraDistance;
-      const visibleWidthAtDistance = visibleHeightAtDistance * camera.aspect;
-
-      const horizontalExtent = Math.max(size.x, size.z);
-      const scale = (visibleWidthAtDistance * TARGET_WIDTH_FRACTION) / horizontalExtent;
-
-      model.scale.setScalar(scale);
-
-      // Apoyo exacto en el plano del suelo (box.min.y -> y=0).
-      model.position.y = -box.min.y * scale;
-
-      // Centrado horizontal por footprint de la base (no por el bounding box
-      // completo) — relevante por la asimetría de los dedos extendidos.
-      const footprint = computeBaseFootprintCenter(model, box);
-      model.position.x = -footprint.x * scale;
-      model.position.z = -footprint.z * scale;
-
-      modelGroup.add(model);
-
-      modelBoxForHotspots = new THREE.Box3().setFromObject(model);
-      modelCenterForHotspots = modelBoxForHotspots.getCenter(new THREE.Vector3());
-      computeHotspotAnchors(model);
-
-      try {
-        await applySpecGlossTextureManually(gltf);
-      } catch (e) {
-        console.warn('No se pudo aplicar la textura manualmente:', e);
-      }
-    },
-    (progress) => {
-      if (progress.total) {
-        const pct = Math.round((progress.loaded / progress.total) * 100);
-        loadingMsg.textContent = `Cargando modelo 3D… ${pct}%`;
-      }
-    },
-    (err) => {
-      loadResolved = true;
-      clearTimeout(timeoutId);
-      console.error('Error cargando GLB:', err);
-      loadingMsg.className = 'error-msg';
-      loadingMsg.innerHTML = 'No se pudo cargar el modelo 3D.<br><span style="font-size:0.8em;opacity:0.7;">' + MODEL_URL + '</span>';
-    }
-  );
-
-  let isDragging = false;
-  let prevX = 0;
-  let rotY = 0;
-
-  function onDown(x) { isDragging = true; prevX = x; }
-  function onMove(x) {
-    if (!isDragging) return;
-    const dx = x - prevX;
-    rotY += dx * 0.01;
-    modelGroup.rotation.y = rotY;
-    prevX = x;
-  }
-  function onUp() { isDragging = false; }
-
-  renderer.domElement.addEventListener('mousedown', (e) => onDown(e.clientX));
-  window.addEventListener('mousemove', (e) => onMove(e.clientX));
-  window.addEventListener('mouseup', onUp);
-
-  renderer.domElement.addEventListener('touchstart', (e) => {
-    if (e.touches.length === 1) onDown(e.touches[0].clientX);
-  }, { passive: true });
-  renderer.domElement.addEventListener('touchmove', (e) => {
-    if (e.touches.length === 1) onMove(e.touches[0].clientX);
-  }, { passive: true });
-  renderer.domElement.addEventListener('touchend', onUp);
 
   let lastHotspotUpdate = 0;
   const HOTSPOT_UPDATE_INTERVAL = 1000 / 30;
