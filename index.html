@@ -227,12 +227,17 @@
   }
   #screen-detalle .dt-epigraph-item:last-child{ border-right:none; }
   #screen-detalle .dt-epigraph-item svg{ width:4vw; min-width:14px; height:4vw; min-height:14px; color:var(--dt-gold); flex-shrink:0; }
-  #screen-detalle .dt-epigraph-item span{ font-size:calc(2.4vw * var(--dt-font-scale)); line-height:1.2; color:var(--dt-ink); text-align:left; }
+  #screen-detalle .dt-epigraph-item span{ font-size:clamp(2.2vw, calc(2.4vw * var(--dt-font-scale)), 2.6vw); line-height:1.2; color:var(--dt-ink); text-align:left; }
 
   /* --- Grupo textual: bloque de texto --- */
-  #screen-detalle .dt-text-block{ display:flex; flex-direction:column; gap:1vh; text-align:left; }
-  #screen-detalle .dt-section-title{ font-family:'Cormorant Garamond',serif; font-weight:600; font-size:calc(4.2vw * var(--dt-font-scale)); color:var(--dt-ink); }
-  #screen-detalle .dt-text-block p{ font-size:calc(2.8vw * var(--dt-font-scale)); line-height:1.5; color:rgba(43,36,30,0.85); }
+  /* FIX (auditoría Lucas): faltaba el padding estándar — el PDF pide que
+     "párrafo de texto" lo lleve, igual que box académico y widgets. */
+  #screen-detalle .dt-text-block{
+    display:flex; flex-direction:column; gap:1vh; text-align:left;
+    padding:clamp(8px, 2vh, 18px) clamp(14px, 5vw, 24px);
+  }
+  #screen-detalle .dt-section-title{ font-family:'Cormorant Garamond',serif; font-weight:600; font-size:clamp(3.7vw, calc(4.2vw * var(--dt-font-scale)), 4.7vw); color:var(--dt-ink); }
+  #screen-detalle .dt-text-block p{ font-size:clamp(2.4vw, calc(2.8vw * var(--dt-font-scale)), 3.2vw); line-height:1.5; color:rgba(43,36,30,0.85); }
 
   /* --- Grupo complementario: timeline --- */
   #screen-detalle .dt-timeline{
@@ -254,8 +259,8 @@
     content:''; position:absolute; left:calc(1.6vw - 3px); top:50%; transform:translateY(-50%);
     width:7px; height:7px; border-radius:50%; background:var(--dt-gold);
   }
-  #screen-detalle .dt-timeline-year{ font-size:calc(2.8vw * var(--dt-font-scale)); font-weight:700; color:var(--dt-gold); white-space:nowrap; flex-shrink:0; }
-  #screen-detalle .dt-timeline-text{ font-size:calc(2.6vw * var(--dt-font-scale)); line-height:1.35; color:var(--dt-ink); }
+  #screen-detalle .dt-timeline-year{ font-size:clamp(2.4vw, calc(2.8vw * var(--dt-font-scale)), 3.0vw); font-weight:700; color:var(--dt-gold); white-space:nowrap; flex-shrink:0; }
+  #screen-detalle .dt-timeline-text{ font-size:clamp(2.2vw, calc(2.6vw * var(--dt-font-scale)), 2.8vw); line-height:1.35; color:var(--dt-ink); }
 
   /* --- Grupo visual: widget interactivo (Técnica) --- */
   #screen-detalle .dt-widget-group{ display:flex; flex-direction:column; align-items:center; gap:1.4vh; text-align:center; }
@@ -264,8 +269,8 @@
     aspect-ratio:1/1; border-radius:50%; overflow:hidden; border:2px solid var(--dt-gold-soft);
   }
   #screen-detalle .dt-widget-img-wrap img{ width:100%; height:100%; object-fit:cover; display:block; }
-  #screen-detalle .dt-widget-name{ font-family:'Cormorant Garamond',serif; font-weight:600; font-size:calc(4vw * var(--dt-font-scale)); color:var(--dt-gold); }
-  #screen-detalle .dt-widget-desc{ font-size:calc(2.8vw * var(--dt-font-scale)); line-height:1.45; color:rgba(43,36,30,0.85); max-width:88%; }
+  #screen-detalle .dt-widget-name{ font-family:'Cormorant Garamond',serif; font-weight:600; font-size:clamp(3.6vw, calc(4vw * var(--dt-font-scale)), 4.4vw); color:var(--dt-gold); }
+  #screen-detalle .dt-widget-desc{ font-size:clamp(2.5vw, calc(2.8vw * var(--dt-font-scale)), 3.1vw); line-height:1.45; color:rgba(43,36,30,0.85); max-width:88%; }
   #screen-detalle .dt-widget-selectors{ display:flex; flex-direction:row; gap:2.4vw; margin-top:0.4vh; }
   #screen-detalle .dt-widget-selector-btn{
     width:8vw; height:8vw; max-width:34px; max-height:34px; min-width:26px; min-height:26px;
@@ -283,8 +288,8 @@
     padding:clamp(8px, 2vh, 18px) clamp(14px, 5vw, 24px); text-align:left;
   }
   #screen-detalle .dt-academic-box svg{ width:5.5vw; min-width:20px; height:5.5vw; min-height:20px; color:var(--dt-gold); flex-shrink:0; margin-top:0.3vh; }
-  #screen-detalle .dt-academic-box-title{ font-size:calc(3vw * var(--dt-font-scale)); font-weight:700; color:var(--dt-ink); margin-bottom:0.4vh; }
-  #screen-detalle .dt-academic-box-text{ font-size:calc(2.7vw * var(--dt-font-scale)); line-height:1.45; color:rgba(43,36,30,0.85); }
+  #screen-detalle .dt-academic-box-title{ font-size:clamp(2.7vw, calc(3vw * var(--dt-font-scale)), 3.3vw); font-weight:700; color:var(--dt-ink); margin-bottom:0.4vh; }
+  #screen-detalle .dt-academic-box-text{ font-size:clamp(2.4vw, calc(2.7vw * var(--dt-font-scale)), 3.0vw); line-height:1.45; color:rgba(43,36,30,0.85); }
 
   /* --- Contexto: hero solo (sin epígrafe) --- */
   #screen-detalle .dt-hero-solo{
@@ -718,7 +723,20 @@
 
   const scene = new THREE.Scene();
   const camera = new THREE.PerspectiveCamera(45, w / h, 0.1, 100);
-  camera.position.set(0, 0, 4);
+  // PARCHE PUNTUAL DE ESTA PIEZA (no aplicado a display-base.html, a pedido de Lucas):
+  // display-base.html posiciona la cámara en (0,0,4) sin lookAt/tilt — su eje óptico
+  // pasa exactamente por el origen del mundo, así que el plano y=0 (donde
+  // model.position.y ancla la base real del modelo, más abajo) se proyecta en el
+  // CENTRO vertical del canvas, no cerca del piso donde están el anillo/sombra
+  // (posicionados por CSS en bottom:8% de .viewer-wrap). Resultado: el modelo
+  // "flota" muy por encima del anillo.
+  // Fix: subir la cámara en Y (sin rotarla — sigue mirando derecho por -Z) empuja
+  // el plano y=0 hacia abajo en la proyección, sin tocar la fórmula de escala por
+  // ancho visible (que solo depende de FOV/distancia en Z, no de la posición en Y).
+  // CAMERA_Y_OFFSET es una aproximación calculada para viewport móvil típico —
+  // ajustar visualmente si display-base.html cambia el layout del visor.
+  const CAMERA_Y_OFFSET = 1.1;
+  camera.position.set(0, CAMERA_Y_OFFSET, 4);
 
   const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
   renderer.setSize(w, h);
