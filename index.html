@@ -220,7 +220,7 @@
   #screen-detalle .dt-epigraph-text{ font-size:clamp(2.2vw, calc(2.4vw * var(--dt-font-scale-secondary)), 2.6vw); line-height:1.25; text-align:left; }
 
   /* ---- Grupo Textual: título de sección + párrafos ---- */
-  #screen-detalle .dt-text-block{ display:flex; flex-direction:column; gap:1vh; min-height:0; overflow:hidden; }
+  #screen-detalle .dt-text-block{ display:flex; flex-direction:column; gap:1vh; flex-shrink:0; }
   #screen-detalle .dt-section-title{ font-family:'Cormorant Garamond',serif; font-weight:600; font-size:clamp(3.5vw, calc(3.7vw * var(--dt-font-scale-primary)), 4.1vw); color:var(--dt-ink); }
   #screen-detalle .dt-paragraph{ font-size:clamp(2.4vw, calc(2.6vw * var(--dt-font-scale-primary)), 3.0vw); line-height:1.5; color:rgba(43,36,30,0.85); }
   #screen-detalle .dt-paragraph + .dt-paragraph{ margin-top:0.8vh; }
@@ -267,7 +267,7 @@
   #screen-detalle .dt-widget-btn.active{ background:var(--dt-gold); border-color:var(--dt-gold); color:var(--dt-card); }
 
   /* ---- Boxes académicos / tarjetas de contexto (Grupo Textual) ---- */
-  #screen-detalle .dt-academic-boxes{ display:flex; flex-direction:column; gap:1vh; min-height:0; overflow:hidden; }
+  #screen-detalle .dt-academic-boxes{ display:flex; flex-direction:column; gap:1vh; flex-shrink:0; }
   #screen-detalle .dt-academic-box{
     display:flex; flex-direction:row; align-items:flex-start; gap:3vw;
     border:1px solid var(--dt-gold-soft); border-radius:12px;
